@@ -1,0 +1,170 @@
+Giselle Northy
+CS 201 Lab 6 – Using Fork() Function (15 points)
+Summer 2020
+
+For information on how to do this lab, see the page on "Exceptional Flow Control Part I" in the week 6 module.
+
+/**
+Part A: Simple fork (3 points)
+The file one.c contains a simple example using fork().
+
+A. Before running the program, examine it and write down all the valid output sequences of 'red' and 'blue'. 
+
+The program will print out red then blue because the wait(NULL) reaps the child pid's - it's waiting for the child processes to end.
+Example:
+red
+blue
+
+B. After you have entered your answer, run the "one" program several times to confirm your answer. 
+Was your initial guess correct? Why or why not?
+
+I was incorrect, sometimes it returns red then blue, sometimes blue then red.
+Always returns only 1 blue and 1 red. The wait(NULL) happens after the printf, so I was mistaken.
+
+I think I was wrong because sometimes the parent doWork() process completes before the child 
+and sometimes it is the other way around. When the doWork() loop ends for the child or parent process, it returns
+either red (for child) or blue (for parent). I believe this is a race condition
+
+**/
+
+/**
+Part B: Still simple fork (3 points)
+The file two.c contains another example using fork().
+
+A. Before running the program, examine it and write down all the valid output sequences of 'red', 'blue', 'yellow' and 'green'.
+Enter these in your answer file. 
+
+My guess is that it can return the following combinations with the caveat that red always prints before yellow
+and blue always prints before green. 
+
+Example:
+
+red
+yellow
+blue
+green
+
+blue
+green
+red
+yellow
+
+red
+blue
+yellow
+green
+
+blue
+red
+yellow
+green
+
+blue
+red
+green
+yellow
+
+red
+blue
+green
+yellow
+
+B. After you have entered your answer, run the "two" program several times to confirm your answer.
+Was your initial guess correct? Why or why not?
+
+I was mostly correct. I found that it always returned either red or blue first, followed by green and yellow.
+Example:
+red
+blue
+green
+yellow
+
+blue
+red
+yellow
+green
+
+I think this is because the time spent in doWork() and the loop that it was enough of a delay that red and
+blue always finished before green and yellow, but green and yellow never finished before red or blue. This was an interesting demonstration of child / parent process
+returning times.
+
+**/
+
+/**
+Part C: Too forky (4 points)
+The file three.c contains another example using fork() but this time it has lots of extra forks.
+
+A. Before running the program, examine it and write down all the valid output sequences of 'red', 'blue', 'yellow' and 'green'. 
+Enter these in your answer file. 
+
+One this one I noticed the fork() in the 'if' block. I think this is relevant: Before any fork call, only the parent is running. 
+After fork is called, there are two processes running the same code.
+
+I think what will happen is the child process runs, prints red and then forks, and then two new 
+processes are running, they run doWork() and yellow gets printed out twice.
+
+A similar thing happens for the parent 'else' block. Blue prints once and green prints twice.
+I think red or blue will always print first, followed by yellow twice and green twice, or vice versa.
+Example:
+
+red
+blue
+yellow
+yellow
+green
+green
+
+blue
+red
+yellow
+green
+yellow
+green
+
+...
+yellow
+green
+green
+yellow
+
+...
+green
+yellow
+yellow
+green
+
+B. After you have entered your answer, run the "three" program several times to confirm your answer. 
+Was your initial guess correct? Why or why not?
+
+I was mostly correct, but not quite. It's true that red or blue always return first, followed by the other.
+After that, sometimes yellow green yellow green is returned, or yellow yellow green green or green green yellow yellow.
+
+The weirdest thing is this:
+
+Basically because there is a wait(NULL), only one of the children gets reaped 
+by that so there are two more child processes going. Sometimes the child process finishes
+before the parent and sometimes it doesn't.
+So on the output, I see things where every time yellow or green ends up on
+the next console prompt line, and sometimes yellow or green ends up after the console prompt line, which is very weird.
+
+Example:
+
+blue
+red
+green
+green
+giselle.northy@syccuxas01:~/cs201/lab6> yellow
+yellow
+
+In other words, a child also becomes a parent process when it forks off its own child
+and runs the same code. I understand it like, but I could be incorrect:
+
+'if' block Child -> child -> child
+'else' block Parent -> child -> child
+
+Because there is no while loop, we have an issue where the child can terminate before the parent can get to the waitpid line, it will still be 'reaped' properly. 
+I believe this is because the child gets into a 'zombie' state until the parent calls waitpid. If the parent gets to wait before children terminate, the program 
+hangs until the child terminates and then reaps the child, and goes on. I think this is why the program hangs a bit and returns yellow/green in weirdly as described above.
+Should really use a while loop to 'reap' multiple children.
+
+**/
